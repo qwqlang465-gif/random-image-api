@@ -52,8 +52,8 @@ npm start
 
 访问：
 
-- 首页：`http://localhost:3000/`
-- 后台：`http://localhost:3000/admin`
+- API 首页：`http://localhost:3000/image`
+- 后台：`http://localhost:3000/image/admin`
 - 默认账号：`admin`
 - 默认密码：`changeme`
 
@@ -82,11 +82,11 @@ volumes:
 4. 把 `PUBLIC_BASE_URL` 改为你的公网访问地址，例如 `https://api.example.com`。
 5. 把 `ADMIN_USERNAME`、`ADMIN_PASSWORD`、`SESSION_SECRET` 改为强随机值。
 6. 启动编排。
-7. 在反向代理中绑定域名，并建议额外给后台路径加 IP 白名单、Basic Auth 或访问规则。
+7. 在反向代理中绑定域名，并建议额外给 `/image/admin` 后台路径加 IP 白名单、Basic Auth 或访问规则。
 
 ## 如何创建图库
 
-后台进入 `/admin` 后，在“创建图库”输入图库名，例如：
+后台进入 `/image/admin` 后，在“创建图库”输入图库名，例如：
 
 ```text
 luotianyi
@@ -129,11 +129,13 @@ public/images/luotianyi/mobile
 
 ## API 文档
 
-### GET `/`
+### GET `/image`
 
 返回 API 首页，展示项目名、总图片数、图库数量、每个图库的 pc/mobile 数量、调用示例和一张随机预览图。
 
-### GET `/health`
+根路径 `/` 不放展示页面，项目访问路径统一使用 `/image/xxx`。
+
+### GET `/image/health`
 
 ```json
 {
@@ -145,7 +147,7 @@ public/images/luotianyi/mobile
 }
 ```
 
-### GET `/api/random`
+### GET `/image/api/random`
 
 默认随机返回任意图库、任意设备类型的一张图片本体。
 
@@ -158,19 +160,19 @@ public/images/luotianyi/mobile
 示例：
 
 ```text
-/api/random
-/api/random?gallery=luotianyi
-/api/random?gallery=luotianyi&device=pc
-/api/random?gallery=luotianyi&device=mobile
-/api/random?gallery=luotianyi&device=pc&type=json
-/api/random?gallery=luotianyi&device=mobile&type=redirect
+/image/api/random
+/image/api/random?gallery=luotianyi
+/image/api/random?gallery=luotianyi&device=pc
+/image/api/random?gallery=luotianyi&device=mobile
+/image/api/random?gallery=luotianyi&device=pc&type=json
+/image/api/random?gallery=luotianyi&device=mobile&type=redirect
 ```
 
 JSON 返回格式：
 
 ```json
 {
-  "url": "https://api.example.com/images/luotianyi/pc/001.webp",
+  "url": "https://api.example.com/image/images/luotianyi/pc/001.webp",
   "gallery": "luotianyi",
   "device": "pc",
   "filename": "001.webp",
@@ -180,17 +182,17 @@ JSON 返回格式：
 }
 ```
 
-### GET `/api/:gallery`
+### GET `/image/api/:gallery`
 
 指定图库快捷接口：
 
 ```text
-/api/luotianyi
-/api/luotianyi?device=pc
-/api/luotianyi?device=mobile&type=json
+/image/api/luotianyi
+/image/api/luotianyi?device=pc
+/image/api/luotianyi?device=mobile&type=json
 ```
 
-### GET `/api/galleries`
+### GET `/image/api/galleries`
 
 返回所有图库统计：
 
@@ -207,7 +209,7 @@ JSON 返回格式：
 }
 ```
 
-### GET `/api/list`
+### GET `/image/api/list`
 
 返回图片列表，不返回服务器绝对路径。
 
@@ -219,13 +221,13 @@ JSON 返回格式：
 
 默认最多返回 100 条。
 
-### GET `/api/stats`
+### GET `/image/api/stats`
 
 返回完整统计信息，包括图片总数、图库数量、各图库统计和缓存生成时间。
 
 ## 后台管理说明
 
-- 后台路径默认是 `/admin`，可通过 `ADMIN_PATH` 改成不明显路径。
+- 后台路径默认是 `/image/admin`，可通过 `ADMIN_PATH` 改成不明显路径，但建议继续保持在 `/image/xxx` 下。
 - 必须登录后才能访问后台。
 - 不提供公开上传接口。
 - 所有后台 POST 操作都有 CSRF 防护。
@@ -247,7 +249,7 @@ JSON 返回格式：
 | `ADMIN_USERNAME` | `admin` | 管理员用户名 |
 | `ADMIN_PASSWORD` | `changeme` | 管理员密码 |
 | `SESSION_SECRET` | `please-change-this` | Session 密钥 |
-| `ADMIN_PATH` | `/admin` | 后台路径 |
+| `ADMIN_PATH` | `/image/admin` | 后台路径 |
 | `MAX_FILE_SIZE_MB` | `10` | 单文件最大大小 |
 | `MAX_UPLOAD_FILES` | `20` | 单次最大上传数量 |
 | `CORS_ORIGIN` | `*` | CORS 来源，多个来源用逗号分隔 |

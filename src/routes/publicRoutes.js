@@ -13,7 +13,7 @@ function parseDevice(value, fallback = 'all') {
 function parseLimit(value) {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed < 1) return 100;
-  return Math.min(parsed, 1000);
+  return Math.min(parsed, 100);
 }
 
 function galleryRows(galleries) {

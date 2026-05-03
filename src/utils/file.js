@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileTypeFromBuffer } from 'file-type';
-import { allowedImageExtensions, deviceNames, galleryNamePattern } from '../config.js';
+import { allowedImageExtensions, appBasePath, deviceNames, galleryNamePattern } from '../config.js';
 
 const mimeByExt = {
   jpg: 'image/jpeg',
@@ -80,7 +80,7 @@ export function createSafeFilename(ext) {
 }
 
 export function publicImagePath(gallery, device, filename) {
-  return `/images/${encodeURIComponent(gallery)}/${encodeURIComponent(device)}/${encodeURIComponent(filename)}`;
+  return `${appBasePath}/images/${encodeURIComponent(gallery)}/${encodeURIComponent(device)}/${encodeURIComponent(filename)}`;
 }
 
 export async function ensureDir(dir) {

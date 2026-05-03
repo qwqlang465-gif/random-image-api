@@ -7,12 +7,14 @@ const toInt = (value, fallback) => {
 
 const normalizeBaseUrl = (url) => String(url || 'http://localhost:3000').replace(/\/+$/, '');
 const normalizeAdminPath = (value) => {
-  const raw = String(value || '/admin').trim();
+  const raw = String(value || `${appBasePath}/admin`).trim();
   const withSlash = raw.startsWith('/') ? raw : `/${raw}`;
-  return withSlash.replace(/\/+$/, '') || '/admin';
+  return withSlash.replace(/\/+$/, '') || `${appBasePath}/admin`;
 };
 
 const imageRootInput = process.env.IMAGE_ROOT || 'public/images';
+
+export const appBasePath = '/image';
 
 export const config = {
   port: toInt(process.env.PORT, 3000),
@@ -25,7 +27,7 @@ export const config = {
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || 'changeme',
   sessionSecret: process.env.SESSION_SECRET || 'please-change-this',
-  adminPath: normalizeAdminPath(process.env.ADMIN_PATH || '/admin'),
+  adminPath: normalizeAdminPath(process.env.ADMIN_PATH || `${appBasePath}/admin`),
   maxFileSizeMb: toInt(process.env.MAX_FILE_SIZE_MB, 10),
   maxUploadFiles: toInt(process.env.MAX_UPLOAD_FILES, 20),
   corsOrigin: process.env.CORS_ORIGIN || '*'

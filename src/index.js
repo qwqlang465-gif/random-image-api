@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
-import { config } from './config.js';
+import { appBasePath, config } from './config.js';
 import { ImageStore } from './imageStore.js';
 import { attachAdminPath } from './middleware/auth.js';
 import { csrfProtection } from './middleware/csrf.js';
@@ -52,9 +52,9 @@ app.use(
   })
 );
 
-app.use('/assets', express.static(path.resolve(process.cwd(), 'public/assets'), { index: false }));
+app.use(`${appBasePath}/assets`, express.static(path.resolve(process.cwd(), 'public/assets'), { index: false }));
 app.use(
-  '/images',
+  `${appBasePath}/images`,
   express.static(config.imageRoot, {
     index: false,
     dotfiles: 'ignore',
@@ -84,7 +84,7 @@ app.use(
 
 app.use(attachAdminPath(config.adminPath));
 app.use(config.adminPath, csrfProtection, createAdminRouter(store));
-app.use(createPublicRouter(store));
+app.use(appBasePath, createPublicRouter(store));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });

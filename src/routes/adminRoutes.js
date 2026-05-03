@@ -132,12 +132,12 @@ function filterLinks(galleries, currentGallery, currentDevice, adminPath) {
 
 function apiExamples(adminPath) {
   const examples = [
-    '/api/random',
-    '/api/random?gallery=luotianyi',
-    '/api/random?gallery=luotianyi&device=pc',
-    '/api/random?gallery=luotianyi&device=mobile&type=json',
-    '/api/galleries',
-    '/api/list?limit=100'
+    '/image/api/random',
+    '/image/api/random?gallery=luotianyi',
+    '/image/api/random?gallery=luotianyi&device=pc',
+    '/image/api/random?gallery=luotianyi&device=mobile&type=json',
+    '/image/api/galleries',
+    '/image/api/list?limit=100'
   ];
   return examples
     .map((example) => `<a href="${escapeHtml(example)}" target="_blank" rel="noreferrer">${escapeHtml(example)}</a>`)
