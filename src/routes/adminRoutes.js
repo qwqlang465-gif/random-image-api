@@ -15,7 +15,8 @@ import {
   ensureDir,
   formatBytes,
   publicImagePath,
-  safeJoin
+  safeJoin,
+  sanitizeFilenameStem
 } from '../utils/file.js';
 import { escapeHtml, renderView } from '../utils/response.js';
 
@@ -41,6 +42,12 @@ function galleryOptions(galleries, selected = '') {
       const active = gallery.name === selected ? 'selected' : '';
       return `<option value="${escapeHtml(gallery.name)}" ${active}>${escapeHtml(gallery.name)}</option>`;
     })
+    .join('');
+}
+
+function targetGalleryOptions(galleries) {
+  return galleries
+    .map((gallery) => `<option value="${escapeHtml(gallery.name)}">${escapeHtml(gallery.name)}</option>`)
     .join('');
 }
 
@@ -77,11 +84,15 @@ function recentImages(images) {
         <img src="${escapeHtml(image.path)}" alt="${escapeHtml(image.filename)}" loading="lazy">
         <div>
           <strong>${escapeHtml(image.filename)}</strong>
-          <span>${escapeHtml(image.gallery)} / ${escapeHtml(image.device)}</span>
+          <span>${escapeHtml(image.gallery)} / ${escapeHtml(image.device)} / ${resolutionText(image)}</span>
         </div>
       </article>`
     )
     .join('');
+}
+
+function resolutionText(image) {
+  return image.width && image.height ? `${image.width} x ${image.height}` : '未知分辨率';
 }
 
 function imageCards(images, csrfToken, adminPath) {
@@ -89,11 +100,21 @@ function imageCards(images, csrfToken, adminPath) {
   return images
     .map((image) => {
       const url = `${config.publicBaseUrl}${publicImagePath(image.gallery, image.device, image.filename)}`;
-      return `<article class="image-card">
+      const payload = escapeHtml(JSON.stringify({ gallery: image.gallery, device: image.device, filename: image.filename }));
+      return `<article class="image-card image-card-${escapeHtml(image.device)}"
+        data-filename="${escapeHtml(image.filename.toLowerCase())}"
+        data-size="${image.size}"
+        data-mtime="${image.mtimeMs}"
+        data-width="${image.width || 0}"
+        data-height="${image.height || 0}">
+        <label class="image-select">
+          <input type="checkbox" class="image-checkbox" name="selectedImage" value="${payload}" aria-label="选择 ${escapeHtml(image.filename)}">
+        </label>
         <img src="${escapeHtml(image.path)}" alt="${escapeHtml(image.filename)}" loading="lazy">
         <div class="image-meta">
           <strong title="${escapeHtml(image.filename)}">${escapeHtml(image.filename)}</strong>
           <span>${escapeHtml(image.gallery)} / ${escapeHtml(image.device)}</span>
+          <span>${resolutionText(image)}</span>
           <span>${formatBytes(image.size)}</span>
         </div>
         <div class="card-actions">
@@ -112,23 +133,75 @@ function imageCards(images, csrfToken, adminPath) {
 }
 
 function filterLinks(galleries, currentGallery, currentDevice, adminPath) {
-  const galleryLinks = ['all', ...galleries.map((gallery) => gallery.name)]
+  const total = galleries.reduce((sum, gallery) => sum + gallery.total, 0);
+  const galleryLinks = [{ name: '全部图库', value: '', total }, ...galleries.map((gallery) => ({ name: gallery.name, value: gallery.name, total: gallery.total }))]
     .map((gallery) => {
-      const value = gallery === 'all' ? '' : gallery;
+      const value = gallery.value;
       const active = (currentGallery || '') === value ? 'active' : '';
-      const label = gallery === 'all' ? '全部图库' : gallery;
       const url = `${adminPath}?gallery=${encodeURIComponent(value)}&device=${encodeURIComponent(currentDevice || 'all')}`;
-      return `<a class="${active}" href="${url}">${escapeHtml(label)}</a>`;
+      return `<a class="${active}" href="${url}">${escapeHtml(gallery.name)}(${gallery.total})</a>`;
     })
     .join('');
-  const deviceLinks = ['all', ...deviceNames]
-    .map((device) => {
-      const active = (currentDevice || 'all') === device ? 'active' : '';
-      const url = `${adminPath}?gallery=${encodeURIComponent(currentGallery || '')}&device=${device}`;
-      return `<a class="${active}" href="${url}">${device === 'all' ? '全部类型' : escapeHtml(device)}</a>`;
+  const source = currentGallery ? galleries.filter((gallery) => gallery.name === currentGallery) : galleries;
+  const pcTotal = source.reduce((sum, gallery) => sum + gallery.pc, 0);
+  const mobileTotal = source.reduce((sum, gallery) => sum + gallery.mobile, 0);
+  const deviceItems = [
+    { name: '全部类型', value: 'all', total: pcTotal + mobileTotal },
+    { name: 'pc', value: 'pc', total: pcTotal },
+    { name: 'mobile', value: 'mobile', total: mobileTotal }
+  ];
+  const deviceLinks = deviceItems
+    .map((item) => {
+      const active = (currentDevice || 'all') === item.value ? 'active' : '';
+      const url = `${adminPath}?gallery=${encodeURIComponent(currentGallery || '')}&device=${item.value}`;
+      return `<a class="${active}" href="${url}">${escapeHtml(item.name)}(${item.total})</a>`;
     })
     .join('');
   return `<div class="filter-row">${galleryLinks}</div><div class="filter-row">${deviceLinks}</div>`;
+}
+
+function batchToolbar(galleries, csrfToken, adminPath) {
+  if (galleries.length === 0) return '';
+  return `<form id="batchForm" method="post" action="${adminPath}/images/batch" class="batch-toolbar">
+    <input type="hidden" name="_csrf" value="${csrfToken}">
+    <div class="batch-primary">
+      <label class="select-all-control">
+        <input type="checkbox" id="selectAllImages">
+        全选当前页
+      </label>
+      <span id="selectedCount">已选 0 张</span>
+    </div>
+    <div class="batch-controls">
+      <select name="targetGallery" aria-label="目标图库" data-remember="batchTargetGallery">
+        ${targetGalleryOptions(galleries)}
+      </select>
+      <select name="targetDevice" aria-label="目标类型" data-remember="batchTargetDevice">
+        <option value="pc">pc</option>
+        <option value="mobile">mobile</option>
+      </select>
+      <button type="submit" name="action" value="gallery">移动图库</button>
+      <button type="submit" name="action" value="device">切换类型</button>
+      <button type="submit" name="action" value="delete" class="danger">批量删除</button>
+    </div>
+  </form>`;
+}
+
+function parseSelectedImages(value) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values.map((item) => {
+    const parsed = JSON.parse(item);
+    return {
+      gallery: String(parsed.gallery || ''),
+      device: String(parsed.device || ''),
+      filename: path.basename(String(parsed.filename || ''))
+    };
+  });
+}
+
+function uploadNameStem(mode, customName, originalName) {
+  if (mode === 'custom') return sanitizeFilenameStem(customName);
+  if (mode === 'original') return sanitizeFilenameStem(path.basename(originalName, path.extname(originalName)));
+  return '';
 }
 
 function apiExamples(adminPath) {
@@ -201,9 +274,11 @@ export function createAdminRouter(store) {
         imageCount: stats.imageCount,
         galleryCount: stats.galleryCount,
         galleryOptions: galleryOptions(stats.galleries, currentGallery),
+        targetGalleryOptions: targetGalleryOptions(stats.galleries),
         galleryCards: galleryCards(stats.galleries, csrfToken, config.adminPath),
         recentImages: recentImages(stats.images),
         imageCards: imageCards(filtered, csrfToken, config.adminPath),
+        batchToolbar: batchToolbar(stats.galleries, csrfToken, config.adminPath),
         filterLinks: filterLinks(stats.galleries, currentGallery, currentDevice, config.adminPath),
         apiExamples: apiExamples(config.adminPath),
         maxFileSizeMb: config.maxFileSizeMb,
@@ -242,6 +317,8 @@ export function createAdminRouter(store) {
     try {
       const gallery = String(req.body.gallery || '').trim();
       const device = String(req.body.device || '').trim();
+      const nameMode = String(req.body.nameMode || 'auto');
+      const customName = String(req.body.customName || '').trim();
       assertSafeGallery(gallery);
       assertSafeDevice(device);
       await store.ensureGallery(gallery);
@@ -252,7 +329,7 @@ export function createAdminRouter(store) {
         const originalName = decodeUploadName(file.originalname);
         try {
           const detected = await detectImageType(file.buffer, originalName);
-          const filename = createSafeFilename(detected.ext);
+          const filename = createSafeFilename(detected.ext, uploadNameStem(nameMode, customName, originalName));
           const target = safeJoin(targetDir, filename);
           await fs.writeFile(target, file.buffer, { flag: 'wx', mode: 0o644 });
           const note = detected.extensionCorrected ? `（已按真实格式保存为 .${detected.ext}）` : '';
@@ -285,6 +362,43 @@ export function createAdminRouter(store) {
         filename: path.basename(String(req.body.filename || ''))
       });
       req.session.flash = { type: 'success', text: '图片已删除' };
+    } catch (error) {
+      req.session.flash = { type: 'error', text: error.message };
+    }
+    res.redirect(config.adminPath);
+  });
+
+  router.post('/images/batch', requireAdmin, async (req, res) => {
+    try {
+      const action = String(req.body.action || '');
+      const images = parseSelectedImages(req.body.images);
+      if (images.length === 0) throw new Error('请先选择图片');
+
+      if (action === 'delete') {
+        const result = await store.batchDelete(images);
+        req.session.flash = {
+          type: result.failed.length ? 'error' : 'success',
+          text: `已删除 ${result.success} 张${result.failed.length ? `，失败 ${result.failed.length} 张：${result.failed.join('；')}` : ''}`
+        };
+      } else if (action === 'gallery') {
+        const targetGallery = String(req.body.targetGallery || '');
+        assertSafeGallery(targetGallery);
+        const result = await store.batchChangeGallery(images, targetGallery);
+        req.session.flash = {
+          type: result.failed.length ? 'error' : 'success',
+          text: `已移动 ${result.success} 张${result.failed.length ? `，失败 ${result.failed.length} 张：${result.failed.join('；')}` : ''}`
+        };
+      } else if (action === 'device') {
+        const targetDevice = String(req.body.targetDevice || '');
+        assertSafeDevice(targetDevice);
+        const result = await store.batchChangeDevice(images, targetDevice);
+        req.session.flash = {
+          type: result.failed.length ? 'error' : 'success',
+          text: `已切换 ${result.success} 张${result.failed.length ? `，失败 ${result.failed.length} 张：${result.failed.join('；')}` : ''}`
+        };
+      } else {
+        throw new Error('未知批量操作');
+      }
     } catch (error) {
       req.session.flash = { type: 'error', text: error.message };
     }

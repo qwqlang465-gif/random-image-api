@@ -19,6 +19,7 @@
     "express-session": "^1.18.0",
     "file-type": "^19.5.0",
     "helmet": "^7.1.0",
+    "image-size": "^1.1.1",
     "multer": "^2.0.0"
   }
 }

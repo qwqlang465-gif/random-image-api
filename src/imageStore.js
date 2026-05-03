@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { imageSize } from 'image-size';
 import { config, deviceNames, allowedImageExtensions } from './config.js';
 import {
   assertSafeDevice,
@@ -9,6 +10,23 @@ import {
   publicImagePath,
   safeJoin
 } from './utils/file.js';
+
+async function getImageDimensions(absolutePath) {
+  try {
+    const buffer = await fs.readFile(absolutePath);
+    const dimensions = imageSize(buffer);
+    if (!dimensions?.width || !dimensions?.height) return { width: null, height: null };
+    return { width: dimensions.width, height: dimensions.height };
+  } catch {
+    return { width: null, height: null };
+  }
+}
+
+function uniqueFilename(filename) {
+  const ext = path.extname(filename);
+  const stem = path.basename(filename, ext);
+  return `${stem}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}${ext}`;
+}
 
 const emptyStats = () => ({
   imageCount: 0,
@@ -79,6 +97,7 @@ export class ImageStore {
           const absolutePath = safeJoin(deviceDir, file.name);
           const stat = await fs.stat(absolutePath).catch(() => null);
           if (!stat) continue;
+          const dimensions = await getImageDimensions(absolutePath);
 
           const image = {
             url: `${config.publicBaseUrl}${publicImagePath(gallery, device, file.name)}`,
@@ -87,6 +106,8 @@ export class ImageStore {
             device,
             filename: file.name,
             size: stat.size,
+            width: dimensions.width,
+            height: dimensions.height,
             type: ext === 'jpeg' ? 'jpg' : ext,
             mtimeMs: stat.mtimeMs,
             absolutePath
@@ -147,6 +168,93 @@ export class ImageStore {
     await this.refresh();
   }
 
+  async moveImage({ gallery, device, filename, targetGallery, targetDevice }) {
+    assertSafeGallery(gallery);
+    assertSafeDevice(device);
+    assertSafeGallery(targetGallery);
+    assertSafeDevice(targetDevice);
+    if (!filename || filename !== path.basename(filename)) {
+      throw new Error('非法文件名');
+    }
+
+    const source = safeJoin(config.imageRoot, gallery, device, filename);
+    const targetDir = safeJoin(config.imageRoot, targetGallery, targetDevice);
+    await ensureDir(targetDir);
+
+    let targetFilename = filename;
+    let target = safeJoin(targetDir, targetFilename);
+    try {
+      await fs.access(target);
+      targetFilename = uniqueFilename(filename);
+      target = safeJoin(targetDir, targetFilename);
+    } catch {
+      // Target does not exist.
+    }
+
+    await fs.rename(source, target);
+    return targetFilename;
+  }
+
+  async batchDelete(images) {
+    let success = 0;
+    const failed = [];
+    for (const image of images) {
+      try {
+        await this.deleteImage(image);
+        success += 1;
+      } catch (error) {
+        failed.push(`${image.filename || 'unknown'}: ${error.message}`);
+      }
+    }
+    await this.refresh();
+    return { success, failed };
+  }
+
+  async batchMove(images, { targetGallery, targetDevice }) {
+    let success = 0;
+    const failed = [];
+    for (const image of images) {
+      try {
+        await this.moveImage({ ...image, targetGallery, targetDevice });
+        success += 1;
+      } catch (error) {
+        failed.push(`${image.filename || 'unknown'}: ${error.message}`);
+      }
+    }
+    await this.refresh();
+    return { success, failed };
+  }
+
+  async batchChangeDevice(images, targetDevice) {
+    let success = 0;
+    const failed = [];
+    for (const image of images) {
+      try {
+        await this.moveImage({ ...image, targetGallery: image.gallery, targetDevice });
+        success += 1;
+      } catch (error) {
+        failed.push(`${image.filename || 'unknown'}: ${error.message}`);
+      }
+    }
+    await this.refresh();
+    return { success, failed };
+  }
+
+  async batchChangeGallery(images, targetGallery) {
+    let success = 0;
+    const failed = [];
+    for (const image of images) {
+      try {
+        await this.moveImage({ ...image, targetGallery, targetDevice: image.device });
+        success += 1;
+      } catch (error) {
+        failed.push(`${image.filename || 'unknown'}: ${error.message}`);
+      }
+    }
+    await this.refresh();
+    return { success, failed };
+  }
+
   async listImages({ gallery, device, limit } = {}) {
     const stats = await this.getStats();
     let images = stats.images;
@@ -174,6 +282,8 @@ export function publicImageJson(image, total) {
     device: image.device,
     filename: image.filename,
     size: image.size,
+    width: image.width,
+    height: image.height,
     type: image.type,
     total
   };

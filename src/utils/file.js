@@ -88,8 +88,20 @@ export async function detectImageType(buffer, originalName) {
   };
 }
 
-export function createSafeFilename(ext) {
-  return `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+export function sanitizeFilenameStem(value = '') {
+  const normalized = String(value)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64);
+  return normalized || 'image';
+}
+
+export function createSafeFilename(ext, stem = '') {
+  const prefix = stem ? `${sanitizeFilenameStem(stem)}-` : '';
+  return `${prefix}${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
 }
 
 export function publicImagePath(gallery, device, filename) {

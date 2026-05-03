@@ -7,29 +7,45 @@
     <link rel="stylesheet" href="/image/assets/style.css">
   </head>
   <body class="public-page">
+    <header class="site-header">
+      <a class="brand" href="/image/">Nyaovo</a>
+      <nav class="site-nav" aria-label="主要入口">
+        <a href="/image/api/stats">统计</a>
+        <a href="/image/api/galleries">图库</a>
+        <a href="{{adminPath}}">后台</a>
+      </nav>
+    </header>
+
     <main class="home-shell">
-      <section class="hero-panel glass">
+      <section class="hero-panel">
         <div class="hero-copy">
-          <p class="eyebrow">Self-hosted Random Image API</p>
+          <p class="eyebrow">Self-hosted image service</p>
           <h1>Nyaovo Random Image API</h1>
-          <p class="lead">自用图床后台 + 多图库随机图 API，支持 PC 横屏图与 mobile 竖屏图。</p>
+          <p class="lead">轻量的随机图片 API 和图床后台。按图库、设备类型返回图片，适合站点背景、看板封面和机器人随机图调用。</p>
           <div class="metric-row">
-            <div><strong>{{imageCount}}</strong><span>总图片数</span></div>
-            <div><strong>{{galleryCount}}</strong><span>图库数量</span></div>
+            <div>
+              <strong>{{imageCount}}</strong>
+              <span>图片</span>
+            </div>
+            <div>
+              <strong>{{galleryCount}}</strong>
+              <span>图库</span>
+            </div>
           </div>
           <div class="home-actions">
-            <a href="/image/api/random?type=json">随机 JSON</a>
-            <a href="/image/api/galleries">图库统计</a>
-            <a href="{{adminPath}}">后台管理</a>
+            <a class="button primary" href="/image/api/random">获取随机图</a>
+            <a class="button" href="/image/api/random?type=json">查看 JSON</a>
+            <a class="button muted-button" href="{{adminPath}}">进入后台</a>
           </div>
         </div>
-        <div class="preview-frame">
+        <figure class="preview-frame">
           {{randomPreview}}
-        </div>
+          <figcaption>当前随机预览</figcaption>
+        </figure>
       </section>
 
       <section class="content-grid">
-        <article class="glass panel">
+        <article class="panel">
           <h2>图库统计</h2>
           <div class="table-wrap">
             <table>
@@ -46,7 +62,7 @@
           </div>
         </article>
 
-        <article class="glass panel">
+        <article class="panel api-card">
           <h2>API 调用示例</h2>
           <div class="code-list">
             <code>/image/api/random</code>

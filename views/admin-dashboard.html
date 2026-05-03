@@ -9,11 +9,28 @@
   </head>
   <body class="admin-page">
     <header class="admin-header">
-      <div>
-        <p class="eyebrow">Nyaovo</p>
-        <h1>随机图后台</h1>
+      <div class="header-content">
+        <div class="header-title">
+          <p class="eyebrow">Nyaovo</p>
+          <h1>随机图后台</h1>
+          <p>上传、筛选和批量维护图库图片。</p>
+        </div>
+        <section class="summary-grid header-stats">
+          <article class="stat-card">
+            <span>总图片数</span>
+            <strong>{{imageCount}}</strong>
+          </article>
+          <article class="stat-card">
+            <span>图库数量</span>
+            <strong>{{galleryCount}}</strong>
+          </article>
+          <article class="stat-card wide">
+            <span>上传限制</span>
+            <strong>{{maxUploadFiles}} 张 / {{maxFileSizeMb}}MB</strong>
+          </article>
+        </section>
       </div>
-      <form method="post" action="{{adminPath}}/logout">
+      <form method="post" action="{{adminPath}}/logout" class="header-logout">
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <button type="submit" class="ghost">退出登录</button>
       </form>
@@ -21,86 +38,126 @@
 
     <main class="admin-shell">
       {{message}}
-      <section class="summary-grid">
-        <article class="stat-card">
-          <span>总图片数</span>
-          <strong>{{imageCount}}</strong>
-        </article>
-        <article class="stat-card">
-          <span>图库数量</span>
-          <strong>{{galleryCount}}</strong>
-        </article>
-        <article class="stat-card wide">
-          <span>上传限制</span>
-          <strong>{{maxUploadFiles}} 张 / {{maxFileSizeMb}}MB</strong>
-        </article>
-      </section>
 
-      <section class="admin-grid">
-        <article class="panel">
-          <h2>创建图库</h2>
-          <form method="post" action="{{adminPath}}/galleries" class="inline-create">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <input name="gallery" placeholder="例如 luotianyi" pattern="[a-z0-9_-]+" required>
-            <button type="submit">创建</button>
-          </form>
-        </article>
+      <nav class="admin-nav" aria-label="后台分区">
+        <a href="#upload">上传</a>
+        <a href="#images">图片管理</a>
+        <a href="#galleries">图库</a>
+        <a href="#recent">最近上传</a>
+        <a href="#api">API</a>
+      </nav>
 
-        <article class="panel">
+      <section id="upload" class="panel primary-panel">
+        <div class="section-title compact-title">
           <h2>上传图片</h2>
-          <form id="uploadForm" method="post" action="{{adminPath}}/upload?_csrf={{csrfToken}}" enctype="multipart/form-data" class="stack-form upload-form">
+          <span>支持分批追加</span>
+        </div>
+          <form id="uploadForm" method="post" action="{{adminPath}}/upload?_csrf={{csrfToken}}" enctype="multipart/form-data" class="stack-form upload-form" data-max-files="{{maxUploadFiles}}">
             <div class="upload-controls">
               <label>
                 图库
-                <select name="gallery" required>{{galleryOptions}}</select>
+                <select id="uploadGallery" name="gallery" data-remember="uploadGallery" required>{{galleryOptions}}</select>
               </label>
               <label>
                 类型
-                <select name="device" required>
+                <select id="uploadDevice" name="device" data-remember="uploadDevice" required>
                   <option value="pc">pc 横屏图</option>
                   <option value="mobile">mobile 竖屏图</option>
                 </select>
               </label>
             </div>
+            <div class="upload-controls">
+              <label>
+                命名方式
+                <select id="nameMode" name="nameMode" data-remember="nameMode">
+                  <option value="auto">自动随机命名</option>
+                  <option value="original">原文件名 + 随机后缀</option>
+                  <option value="custom">自定义前缀 + 随机后缀</option>
+                </select>
+              </label>
+              <label>
+                自定义前缀
+                <input id="customName" name="customName" data-remember="customName" placeholder="例如 miku-wallpaper">
+              </label>
+            </div>
             <label class="drop-zone" id="dropZone">
               <input id="fileInput" type="file" name="images" accept=".jpg,.jpeg,.png,.webp,.gif,.avif,image/jpeg,image/png,image/webp,image/gif,image/avif" multiple>
-              <strong>点击选择图片，或拖拽到这里</strong>
-              <span>支持 jpg、jpeg、png、webp、gif、avif；最多 {{maxUploadFiles}} 张，单张 {{maxFileSizeMb}}MB。扩展名不准时会按真实图片格式保存。</span>
+              <span class="drop-icon">+</span>
+              <strong>添加图片到上传队列</strong>
+              <span>可分批选择或拖拽追加，支持 jpg、jpeg、png、webp、gif、avif；最多 {{maxUploadFiles}} 张，单张 {{maxFileSizeMb}}MB。</span>
             </label>
             <div id="uploadMessage" class="upload-message" hidden></div>
             <div id="fileList" class="selected-files" hidden></div>
             <button id="uploadSubmit" type="submit">上传图片</button>
           </form>
-        </article>
       </section>
 
-      <section class="panel">
-        <div class="section-title">
-          <h2>图库管理</h2>
-        </div>
-        <div class="gallery-grid">{{galleryCards}}</div>
-      </section>
-
-      <section class="panel">
-        <div class="section-title">
-          <h2>最近上传</h2>
-        </div>
-        <div class="recent-grid">{{recentImages}}</div>
-      </section>
-
-      <section class="panel">
-        <div class="section-title">
-          <h2>API 示例</h2>
-        </div>
-        <div class="api-links">{{apiExamples}}</div>
-      </section>
-
-      <section class="panel">
-        <div class="section-title">
+      <section id="images" class="panel primary-panel">
+        <div class="section-title compact-title">
           <h2>图片管理</h2>
+          <span>筛选、排序、复制 URL 或批量操作</span>
         </div>
         <div class="filters">{{filterLinks}}</div>
+        <div class="image-filter-bar">
+          <label class="search-field">
+            文件名
+            <input id="imageSearch" type="search" placeholder="搜索文件名" autocomplete="off">
+          </label>
+          <label>
+            排序
+            <select id="imageSort">
+              <option value="newest">最新上传</option>
+              <option value="oldest">最早上传</option>
+              <option value="name-asc">文件名 A-Z</option>
+              <option value="name-desc">文件名 Z-A</option>
+              <option value="size-desc">文件最大</option>
+              <option value="size-asc">文件最小</option>
+              <option value="resolution-desc">分辨率最大</option>
+              <option value="resolution-asc">分辨率最小</option>
+            </select>
+          </label>
+          <div class="filter-status">
+            <span id="imageResultCount">当前 0 张</span>
+            <a id="resetImageFilters" href="{{adminPath}}">重置筛选</a>
+          </div>
+        </div>
+        {{batchToolbar}}
         <div class="image-grid">{{imageCards}}</div>
+        <div class="load-more-row">
+          <button type="button" id="loadMoreImages" class="ghost">加载更多</button>
+          <span id="loadMoreStatus"></span>
+        </div>
+      </section>
+
+      <section class="secondary-grid">
+        <article id="galleries" class="panel">
+          <div class="section-title compact-title">
+            <h2>图库</h2>
+            <span>仅可删除空图库</span>
+          </div>
+          <form method="post" action="{{adminPath}}/galleries" class="inline-create">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <input name="gallery" placeholder="例如 luotianyi" pattern="[a-z0-9_-]+" required>
+            <button type="submit">创建</button>
+          </form>
+          <div class="gallery-grid gallery-grid-compact">{{galleryCards}}</div>
+        </article>
+
+        <article id="recent" class="panel">
+          <div class="section-title compact-title">
+            <h2>最近上传</h2>
+            <span>最近 8 张</span>
+          </div>
+          <div class="recent-grid">{{recentImages}}</div>
+        </article>
+
+        <article id="api" class="panel api-panel">
+          <div class="section-title compact-title">
+            <h2>API 示例</h2>
+            <span>点击打开</span>
+          </div>
+          <div class="api-links">{{apiExamples}}</div>
+        </article>
       </section>
     </main>
   </body>

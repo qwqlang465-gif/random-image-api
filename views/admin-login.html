@@ -7,11 +7,12 @@
     <link rel="stylesheet" href="/image/assets/style.css">
   </head>
   <body class="admin-page login-page">
-    <main class="login-card glass">
-      <div>
+    <main class="login-card">
+      <section class="login-intro" aria-labelledby="loginTitle">
         <p class="eyebrow">Admin</p>
-        <h1>后台登录</h1>
-      </div>
+        <h1 id="loginTitle">后台登录</h1>
+        <p>管理图库、上传图片和维护随机图接口。</p>
+      </section>
       {{message}}
       <form method="post" action="{{adminPath}}/login" class="stack-form">
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
