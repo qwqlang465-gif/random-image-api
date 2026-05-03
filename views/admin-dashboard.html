@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>后台管理 - Nyaovo Random Image API</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script src="/assets/admin.js" defer></script>
+  </head>
+  <body class="admin-page">
+    <header class="admin-header">
+      <div>
+        <p class="eyebrow">Nyaovo</p>
+        <h1>随机图后台</h1>
+      </div>
+      <form method="post" action="{{adminPath}}/logout">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <button type="submit" class="ghost">退出登录</button>
+      </form>
+    </header>
+
+    <main class="admin-shell">
+      {{message}}
+      <section class="summary-grid">
+        <article class="stat-card">
+          <span>总图片数</span>
+          <strong>{{imageCount}}</strong>
+        </article>
+        <article class="stat-card">
+          <span>图库数量</span>
+          <strong>{{galleryCount}}</strong>
+        </article>
+        <article class="stat-card wide">
+          <span>上传限制</span>
+          <strong>{{maxUploadFiles}} 张 / {{maxFileSizeMb}}MB</strong>
+        </article>
+      </section>
+
+      <section class="admin-grid">
+        <article class="panel">
+          <h2>创建图库</h2>
+          <form method="post" action="{{adminPath}}/galleries" class="inline-create">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <input name="gallery" placeholder="例如 luotianyi" pattern="[a-z0-9_-]+" required>
+            <button type="submit">创建</button>
+          </form>
+        </article>
+
+        <article class="panel">
+          <h2>上传图片</h2>
+          <form method="post" action="{{adminPath}}/upload?_csrf={{csrfToken}}" enctype="multipart/form-data" class="stack-form">
+            <label>
+              图库
+              <select name="gallery" required>{{galleryOptions}}</select>
+            </label>
+            <label>
+              类型
+              <select name="device" required>
+                <option value="pc">pc 横屏图</option>
+                <option value="mobile">mobile 竖屏图</option>
+              </select>
+            </label>
+            <label>
+              图片
+              <input type="file" name="images" accept=".jpg,.jpeg,.png,.webp,.gif,.avif,image/jpeg,image/png,image/webp,image/gif,image/avif" multiple required>
+            </label>
+            <button type="submit">上传</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <h2>图库管理</h2>
+        </div>
+        <div class="gallery-grid">{{galleryCards}}</div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <h2>最近上传</h2>
+        </div>
+        <div class="recent-grid">{{recentImages}}</div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <h2>API 示例</h2>
+        </div>
+        <div class="api-links">{{apiExamples}}</div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <h2>图片管理</h2>
+        </div>
+        <div class="filters">{{filterLinks}}</div>
+        <div class="image-grid">{{imageCards}}</div>
+      </section>
+    </main>
+  </body>
+</html>

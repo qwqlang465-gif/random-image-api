@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>后台登录 - Nyaovo Random Image API</title>
+    <link rel="stylesheet" href="/assets/style.css">
+  </head>
+  <body class="admin-page login-page">
+    <main class="login-card glass">
+      <div>
+        <p class="eyebrow">Admin</p>
+        <h1>后台登录</h1>
+      </div>
+      {{message}}
+      <form method="post" action="{{adminPath}}/login" class="stack-form">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <label>
+          用户名
+          <input name="username" autocomplete="username" required>
+        </label>
+        <label>
+          密码
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">登录</button>
+      </form>
+    </main>
+  </body>
+</html>
