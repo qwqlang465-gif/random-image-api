@@ -24,7 +24,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:'],
+        imgSrc: ["'self'", 'data:', 'blob:'],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
         formAction: ["'self'"],
