@@ -2,10 +2,27 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>后台管理 - Nyaovo Random Image API</title>
     <link rel="stylesheet" href="/image/assets/style.css">
     <script type="module" src="{{adminPath}}/../assets/admin/main.js"></script>
+    <style>
+      /* Touch-specific improvements */
+      @media (hover: none) and (pointer: coarse) {
+        .image-card:hover {
+          transform: none;
+          box-shadow: var(--shadow);
+        }
+
+        .image-card:active {
+          transform: scale(0.98);
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+        }
+      }
+    </style>
   </head>
   <body class="admin-page">
     <header class="admin-header">

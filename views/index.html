@@ -3,13 +3,78 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Nyaovo Random Image API</title>
     <link rel="stylesheet" href="/image/assets/style.css">
+    <style>
+      .mobile-menu-toggle {
+        display: none;
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 8px 12px;
+        color: var(--text);
+        font-size: 1.2rem;
+        cursor: pointer;
+        min-height: 40px;
+        min-width: 40px;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .mobile-menu-toggle:hover {
+        background: var(--primary-soft);
+        border-color: var(--primary);
+      }
+      
+      .site-nav.mobile-open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 0 0 var(--radius) var(--radius);
+        padding: 12px;
+        box-shadow: var(--shadow);
+        z-index: 100;
+      }
+      
+      .site-nav.mobile-open a {
+        width: 100%;
+        justify-content: flex-start;
+        border-radius: 6px;
+        margin-bottom: 4px;
+      }
+      
+      @media (max-width: 768px) {
+        .mobile-menu-toggle {
+          display: flex;
+        }
+        
+        .site-header {
+          position: relative;
+        }
+        
+        .site-nav {
+          display: none;
+        }
+        
+        .site-nav.mobile-open {
+          display: flex;
+        }
+      }
+    </style>
   </head>
   <body class="public-page">
     <header class="site-header">
       <a class="brand" href="/image/">Nyaovo</a>
-      <nav class="site-nav" aria-label="主要入口">
+      <button class="mobile-menu-toggle" aria-label="菜单" id="mobileMenuToggle">☰</button>
+      <nav class="site-nav" aria-label="主要入口" id="siteNav">
         <a href="/image/api/stats">统计</a>
         <a href="/image/api/galleries">图库</a>
         <a href="{{adminPath}}">后台</a>
@@ -75,5 +140,43 @@
         </article>
       </section>
     </main>
+    
+    <script>
+      // Mobile menu toggle
+      const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+      const siteNav = document.getElementById('siteNav');
+      
+      if (mobileMenuToggle && siteNav) {
+        mobileMenuToggle.addEventListener('click', () => {
+          siteNav.classList.toggle('mobile-open');
+          const isOpen = siteNav.classList.contains('mobile-open');
+          mobileMenuToggle.textContent = isOpen ? '✕' : '☰';
+          mobileMenuToggle.setAttribute('aria-expanded', isOpen);
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (event) => {
+          if (!siteNav.contains(event.target) && event.target !== mobileMenuToggle) {
+            siteNav.classList.remove('mobile-open');
+            mobileMenuToggle.textContent = '☰';
+            mobileMenuToggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+        
+        // Close menu when clicking a link
+        siteNav.querySelectorAll('a').forEach(link => {
+          link.addEventListener('click', () => {
+            siteNav.classList.remove('mobile-open');
+            mobileMenuToggle.textContent = '☰';
+            mobileMenuToggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+      }
+      
+      // Prevent zoom on double-tap for iOS
+      document.addEventListener('dblclick', (event) => {
+        event.preventDefault();
+      }, { passive: false });
+    </script>
   </body>
 </html>

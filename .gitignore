@@ -143,6 +143,12 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# Playwright MCP temp files
+.playwright-mcp/
+
+# Screenshots
+Snipaste_*.png
+
 # Uploaded images and docker-compose volume data
 images/
 public/images/**

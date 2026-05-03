@@ -2,108 +2,139 @@
 
 [中文](./README.md) | [English](./README_en.md)
 
-Nyaovo Random Image API is a lightweight, self-hosted random image API with a private admin panel. It is designed for personal image hosting, multi-gallery random image endpoints, and easy deployment via Docker or 1Panel.
+A self-hosted random image API with an admin panel. Built on Node.js + Express, no database required. Images are stored on the local filesystem. Suitable for personal image hosting and wallpaper sites.
 
-Project focus: **A private, fully controllable image backend + public multi-gallery random APIs**. It requires authentication to access the admin panel, providing no anonymous upload capabilities. Images are stored natively in the file system and can be managed either via the admin UI or manually in the server directory.
+## Features
 
-## 🌟 Features
+- Multi-gallery management with `pc` (landscape) and `mobile` (portrait) categories
+- Random image API returning raw image or JSON
+- Admin panel: upload, preview, filter, sort, batch delete
+- File header validation on upload, rejects dangerous file types
+- Cookie Session, CSRF, Helmet, Rate Limiting, CORS
 
-- **Lightweight & Efficient**: Built on Node.js 20 and Express.
-- **No Database Needed**: Scans the image directory into an in-memory cache at startup, and auto-refreshes periodically.
-- **Gallery & Device Layout**: Supports structured storage via `public/images/{gallery}/pc` (desktop/landscape) and `public/images/{gallery}/mobile` (mobile/portrait).
-- **Flexible API**: The public random API can return the raw image (stream/redirect) or JSON metadata.
-- **Powerful Admin UI**: Built with plain HTML/CSS/JS (no build steps). Features include multi-file upload, gallery creation, image preview, filtering, sorting, renaming, and batch deletion.
-- **Security Check**: Reads true file headers during uploads to validate image types and blocks dangerous files like SVG/HTML/PHP/EXE.
-- **Hardened**: Includes Cookie Session, CSRF protection, Helmet, Rate Limiting, and CORS configurations.
-- **Deployment Ready**: Comes with a `Dockerfile` and `docker-compose.yml`.
+## Routing
 
-## 🗺️ Routing
+The app is mounted under the `/image` subpath:
 
-The entire application is mounted under the `/image` subpath:
+| Path | Purpose |
+|------|---------|
+| `/image` | Home |
+| `/image/admin` | Admin panel |
+| `/image/images/...` | Static image access |
+| `/image/api/...` | API endpoints |
 
-- **Home**: `/image`
-- **Admin Panel**: `/image/admin`
-- **Static Images**: `/image/images/...`
-- **API Endpoints**: `/image/api/...`
+## Deployment
 
-## 🚀 Quick Start
+### Docker (Recommended)
 
-### Local Development
+**docker compose (Recommended)**
 
 ```bash
-# 1. Install dependencies
-npm install
+git clone https://github.com/user/nyaovo-random-image-api.git
+cd nyaovo-random-image-api
 
-# 2. Setup environment variables
+# Edit environment variables
 cp .env.example .env
+# At minimum, change ADMIN_PASSWORD and SESSION_SECRET
 
-# 3. Start server
-npm start
-```
-
-Default access URLs:
-- Home: `http://localhost:3000/image`
-- Admin: `http://localhost:3000/image/admin`
-- Default Username: `admin`
-- Default Password: `changeme`
-
-> ⚠️ **Warning**: Change `ADMIN_PASSWORD` and `SESSION_SECRET` in `.env` before deploying!
-
-### Docker Compose
-
-```bash
 docker compose up -d --build
 ```
 
-The application maps internal port `3000` to host port `3400` by default.
+Access at `http://localhost:3400/image`, admin at `http://localhost:3400/image/admin`.
 
-```yaml
-ports:
-  - "3400:3000"
-volumes:
-  - ./images:/app/public/images
+**docker run**
+
+```bash
+docker build -t nyaovo-random-image-api .
+
+docker run -d \
+  --name nyaovo \
+  -p 3400:3000 \
+  -v ./images:/app/public/images \
+  -e ADMIN_PASSWORD=your-password \
+  -e SESSION_SECRET=your-secret \
+  -e PUBLIC_BASE_URL=http://localhost:3400 \
+  nyaovo-random-image-api
 ```
 
-> **Note**: The `./images` volume must be writable for the admin panel to upload or delete files. Do not mount it as read-only (`:ro`).
+> The `images` volume must be writable. Do not use `:ro`.
 
-## ⚙️ Environment Variables
+**1Panel**
+
+1. Create a Docker Compose stack, upload project or clone via Git
+2. Use the included `docker-compose.yml`, edit environment variables
+3. After starting, configure a reverse proxy in OpenResty / Nginx to bind your domain
+
+### Local
+
+```bash
+npm install
+cp .env.example .env   # edit config
+npm start               # or npm run dev for hot reload
+```
+
+Default credentials: `admin` / `changeme`.
+
+## Environment Variables
 
 | Variable | Default | Description |
-| --- | --- | --- |
+|----------|---------|-------------|
 | `PORT` | `3000` | Internal server port |
-| `PUBLIC_BASE_URL` | `http://localhost:3000` | Public URL prefix used in JSON responses (Docker default is `:3400`) |
-| `IMAGE_ROOT` | `public/images` | Path to the image directory |
-| `CACHE_TTL_SECONDS` | `60` | Background cache refresh interval |
-| `RATE_LIMIT_WINDOW_MS`| `60000` | Global rate limit window |
+| `PUBLIC_BASE_URL` | `http://localhost:3000` | URL prefix for JSON responses |
+| `IMAGE_ROOT` | `public/images` | Image storage directory |
+| `CACHE_TTL_SECONDS` | `60` | Cache refresh interval (seconds) |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit window (ms) |
 | `RATE_LIMIT_MAX` | `120` | Max requests per window |
 | `ADMIN_USERNAME` | `admin` | Admin username |
 | `ADMIN_PASSWORD` | `changeme` | Admin password |
-| `SESSION_SECRET` | `please-change-this`| Session secret key |
-| `ADMIN_PATH` | `/image/admin` | Custom admin path |
-| `MAX_FILE_SIZE_MB` | `10` | Max file size per upload |
+| `SESSION_SECRET` | `please-change-this` | Session secret key |
+| `ADMIN_PATH` | `/image/admin` | Admin panel path |
+| `MAX_FILE_SIZE_MB` | `10` | Max file size per upload (MB) |
 | `MAX_UPLOAD_FILES` | `20` | Max files per batch upload |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins |
 
-## 📦 API Reference
+## Project Structure
+
+```text
+.
+├── src
+│   ├── index.js
+│   ├── config.js
+│   ├── imageStore.js
+│   ├── routes/
+│   ├── middleware/
+│   └── utils/
+├── public
+│   ├── images/           # Image storage
+│   │   └── {gallery}/
+│   │       ├── pc/
+│   │       └── mobile/
+│   └── assets/           # CSS, JS
+├── views/                # HTML templates
+├── Dockerfile
+├── docker-compose.yml
+└── package.json
+```
+
+## API
 
 ### `GET /image/api/random`
+
 Returns a random image.
 
-**Query Parameters:**
-- `gallery`: Gallery name (e.g., `anime`).
-- `device`: Device type (`pc`, `mobile`, `all`).
-- `type`: Response format (`image`, `json`, `redirect`).
+Parameters:
+- `gallery` — Gallery name
+- `device` — `pc` / `mobile` / `all`
+- `type` — `image` (default) / `json` / `redirect`
 
-**Examples:**
-```text
-/image/api/random?gallery=anime
+```
 /image/api/random?gallery=anime&device=pc&type=json
 ```
 
-**JSON Example:**
+JSON response:
 ```json
 {
-  "url": "https://api.example.com/image/images/anime/pc/001.webp",
+  "url": "https://example.com/image/images/anime/pc/001.webp",
   "gallery": "anime",
   "device": "pc",
   "filename": "001.webp",
@@ -115,26 +146,30 @@ Returns a random image.
 }
 ```
 
-### Gallery Shortcut `GET /image/api/:gallery`
-```text
-/image/api/anime?device=mobile&type=json
-```
-
 ### Other Endpoints
-- `GET /image/api/galleries`: Get gallery statistics.
-- `GET /image/health`: Server health check and uptime.
-- `GET /image/api/list`: Paginated image list.
-- `GET /image/api/stats`: Overall image and gallery stats.
 
-## 🛡️ Security Notes
+| Endpoint | Description |
+|----------|-------------|
+| `GET /image/api/:gallery` | Gallery shortcut |
+| `GET /image/api/galleries` | Gallery statistics |
+| `GET /image/api/list` | Paginated image list |
+| `GET /image/api/stats` | Global statistics |
+| `GET /image/health` | Health check |
 
-- Change default passwords and session secrets before deployment.
-- Consider hiding `ADMIN_PATH` to a custom obscure string.
-- Never mount the `public/images` directory as read-only.
-- Back up your image directory regularly.
+## Image Management
 
-## 📄 License & Copyright
+- Supported formats: jpg, jpeg, png, webp, gif, avif
+- Real file format is detected on upload; wrong extensions are corrected
+- Gallery names: lowercase letters, numbers, underscores, hyphens only
+- You can also drop images into `public/images/{gallery}/pc` or `mobile` directly; the app will pick them up automatically
 
-Released under the [MIT License](./LICENSE).
+## Security
 
-Please do not use unauthorized images for public-facing services. You are responsible for ensuring that you have the right to distribute the images hosted on your instance.
+- Change `ADMIN_PASSWORD` and `SESSION_SECRET` before deploying
+- Consider using a custom `ADMIN_PATH` that is hard to guess
+- Add IP whitelist or Basic Auth for the admin path in your reverse proxy
+- Do not host unauthorized images for public access
+
+## License
+
+[MIT License](./LICENSE)

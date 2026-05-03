@@ -2,9 +2,48 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>后台登录 - Nyaovo Random Image API</title>
     <link rel="stylesheet" href="/image/assets/style.css">
+    <style>
+      /* Mobile-specific login styles */
+      @media (max-width: 768px) {
+        .login-card {
+          width: min(100% - 24px, 430px);
+          padding: 24px 20px;
+        }
+        
+        .login-card h1 {
+          font-size: 1.8rem;
+        }
+        
+        /* Improve touch targets for login form */
+        .login-card input,
+        .login-card button {
+          min-height: 48px;
+          font-size: 16px; /* Prevents zoom on iOS */
+        }
+        
+        /* Better spacing for mobile */
+        .login-intro {
+          margin-bottom: 20px;
+        }
+        
+        .stack-form {
+          gap: 16px;
+        }
+      }
+      
+      /* Touch-specific improvements */
+      @media (hover: none) and (pointer: coarse) {
+        .login-card button:active {
+          transform: scale(0.98);
+        }
+      }
+    </style>
   </head>
   <body class="admin-page login-page">
     <main class="login-card">
@@ -27,5 +66,18 @@
         <button type="submit">登录</button>
       </form>
     </main>
+    
+    <script>
+      // Prevent zoom on double-tap for iOS
+      document.addEventListener('dblclick', (event) => {
+        event.preventDefault();
+      }, { passive: false });
+      
+      // Improve touch responsiveness
+      const loginForm = document.querySelector('.stack-form');
+      if (loginForm) {
+        loginForm.addEventListener('touchstart', () => {}, { passive: true });
+      }
+    </script>
   </body>
 </html>
