@@ -229,6 +229,17 @@ function imageSectionRedirect(req) {
   }
 }
 
+function wantsJson(req) {
+  return req.get('x-requested-with') === 'XMLHttpRequest' || req.accepts(['html', 'json']) === 'json';
+}
+
+function sendUploadResult(req, res, status = 200) {
+  if (wantsJson(req)) {
+    return res.status(status).json({ redirect: config.adminPath });
+  }
+  return res.redirect(config.adminPath);
+}
+
 function apiExamples(adminPath) {
   const examples = [
     '/image/api/random',
@@ -377,10 +388,10 @@ export function createAdminRouter(store) {
         type: results.failed.length ? 'error' : 'success',
         text: messages.join('。') || '没有收到上传文件'
       };
-      res.redirect(config.adminPath);
+      return sendUploadResult(req, res);
     } catch (error) {
       req.session.flash = { type: 'error', text: error.message };
-      res.redirect(config.adminPath);
+      return sendUploadResult(req, res, 400);
     }
   });
 

@@ -105,6 +105,14 @@
               <span>可分批选择或拖拽追加，支持 jpg、jpeg、png、webp、gif、avif；最多 {{maxUploadFiles}} 张，单张 {{maxFileSizeMb}}MB。</span>
             </label>
             <div id="uploadMessage" class="upload-message" hidden></div>
+            <div id="uploadProgress" class="upload-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
+              <progress id="progressBar" class="progress-bar" value="0" max="100"></progress>
+              <div class="progress-stats">
+                <span id="progressPercent">0%</span>
+                <span id="progressBytes">0 B / 0 B</span>
+                <span id="progressSpeed">0 B/s</span>
+              </div>
+            </div>
             <div id="fileList" class="selected-files" hidden></div>
             <button id="uploadSubmit" type="submit">上传图片</button>
           </form>

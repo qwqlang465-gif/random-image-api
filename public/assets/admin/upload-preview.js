@@ -169,6 +169,12 @@ export function initUploadPreview() {
   }
 
   if (uploadForm && fileInput) {
+    const uploadProgress = $('#uploadProgress');
+    const progressBar = $('#progressBar');
+    const progressPercent = $('#progressPercent');
+    const progressBytes = $('#progressBytes');
+    const progressSpeed = $('#progressSpeed');
+
     uploadForm.addEventListener('submit', (event) => {
       if (uploadForm.dataset.submitting === 'true') {
         event.preventDefault();
@@ -180,8 +186,83 @@ export function initUploadPreview() {
         showUploadMessage('请先选择或拖入至少一张图片。', 'error');
         return;
       }
+
+      event.preventDefault();
       uploadForm.dataset.submitting = 'true';
-      setSubmitLoading(event.submitter || uploadForm.querySelector('button[type="submit"]'), '上传中...');
+      const submitBtn = event.submitter || uploadForm.querySelector('button[type="submit"]');
+      setSubmitLoading(submitBtn, '上传中...');
+      clearUploadMessage();
+
+      if (uploadProgress) {
+        uploadProgress.hidden = false;
+        uploadProgress.setAttribute('aria-valuenow', '0');
+        progressBar.value = 0;
+        progressPercent.textContent = '0%';
+        progressBytes.textContent = '0 B / 0 B';
+        progressSpeed.textContent = '0 B/s';
+      }
+
+      const formData = new FormData(uploadForm);
+      const xhr = new XMLHttpRequest();
+      let lastLoaded = 0;
+      let lastTime = Date.now();
+
+      xhr.upload.onprogress = (e) => {
+        if (!uploadProgress) return;
+        const now = Date.now();
+        const timeDiff = (now - lastTime) / 1000;
+
+        if (timeDiff > 0.2 || e.loaded === e.total) {
+          const loadedDiff = e.loaded - lastLoaded;
+          const speed = timeDiff > 0 ? loadedDiff / timeDiff : 0;
+
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.value = percent;
+            uploadProgress.setAttribute('aria-valuenow', String(percent));
+            progressPercent.textContent = `${percent}%`;
+            progressBytes.textContent = `${formatSize(e.loaded)} / ${formatSize(e.total)}`;
+          } else {
+            progressBar.removeAttribute('value');
+            progressPercent.textContent = '上传中...';
+            progressBytes.textContent = `${formatSize(e.loaded)}`;
+          }
+
+          progressSpeed.textContent = `${formatSize(speed)}/s`;
+
+          lastLoaded = e.loaded;
+          lastTime = now;
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 400) {
+          let redirect = uploadForm.action.split('?')[0];
+          try {
+            redirect = JSON.parse(xhr.responseText).redirect || redirect;
+          } catch {}
+          window.location.href = redirect;
+        } else {
+          handleUploadError(new Error(`HTTP ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        handleUploadError(new Error('网络错误，上传失败'));
+      };
+
+      function handleUploadError(err) {
+        uploadForm.dataset.submitting = 'false';
+        submitBtn.disabled = false;
+        submitBtn.textContent = submitBtn.dataset.originalText || '上传图片';
+        if (uploadProgress) uploadProgress.hidden = true;
+        showUploadMessage(`上传失败: ${err.message}`, 'error');
+      }
+
+      xhr.open(uploadForm.method, uploadForm.action);
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+      xhr.send(formData);
     });
   }
 
