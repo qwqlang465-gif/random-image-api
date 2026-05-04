@@ -34,13 +34,35 @@
 <details>
 <summary><b>docker compose 部署（点击展开）</b></summary>
 
+创建 `docker-compose.yml`，复制以下内容，修改 `ADMIN_PASSWORD` 和 `SESSION_SECRET`：
+
+```yaml
+services:
+  nyaovo-random-image-api:
+    image: charyeahowo/nyaovo-random-image-api:latest
+    container_name: nyaovo-random-image-api
+    ports:
+      - "3400:3000"
+    volumes:
+      - ./images:/app/public/images
+    environment:
+      PORT: 3000
+      PUBLIC_BASE_URL: http://localhost:3400
+      IMAGE_ROOT: public/images
+      CACHE_TTL_SECONDS: 60
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX: 120
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: changeme          # ← 务必修改
+      SESSION_SECRET: please-change-this # ← 务必修改
+      ADMIN_PATH: /image/admin
+      MAX_FILE_SIZE_MB: 10
+      MAX_UPLOAD_FILES: 20
+      CORS_ORIGIN: "*"
+    restart: unless-stopped
+```
+
 ```bash
-# 下载配置文件
-curl -O https://raw.githubusercontent.com/charyeahowo/nyaovo-random-image-api/main/docker-compose.yml
-
-# 编辑 docker-compose.yml，修改 ADMIN_PASSWORD 和 SESSION_SECRET
-
-# 启动
 docker compose up -d
 ```
 
