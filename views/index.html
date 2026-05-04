@@ -79,17 +79,18 @@
         </article>
       </section>
     </main>
-    <script>
-      document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.copy-btn');
-        if (!btn) return;
-        try {
-          await navigator.clipboard.writeText(btn.dataset.copy);
-          btn.textContent = '已复制';
-          btn.classList.add('copied');
-          setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
-        } catch { btn.textContent = '失败'; }
-      });
-    </script>
+
+    <!-- API 弹窗 -->
+    <div id="apiModal" class="modal-overlay" hidden>
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 id="modalTitle">API 调用</h3>
+          <button type="button" class="modal-close" id="modalClose">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+      </div>
+    </div>
+
+    <script src="/image/assets/home.js"></script>
   </body>
 </html>

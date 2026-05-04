@@ -27,13 +27,13 @@ function galleryRows(galleries) {
         const nameCell = gallery.label
           ? `${escapeHtml(displayName)}<br><span class="muted">${escapeHtml(gallery.name)}</span>`
           : escapeHtml(displayName);
-        const apiUrl = `/image/api/random?gallery=${encodeURIComponent(gallery.name)}`;
+        const g = escapeHtml(gallery.name);
         return `<tr>
           <td>${nameCell}</td>
           <td>${gallery.total}</td>
           <td>${gallery.pc}</td>
           <td>${gallery.mobile}</td>
-          <td><code class="api-link"><span>${escapeHtml(apiUrl)}</span> <button type="button" class="copy-btn" data-copy="${escapeHtml(apiUrl)}" title="复制">复制</button></code></td>
+          <td><button type="button" class="api-btn" data-gallery="${g}">查看 API</button></td>
         </tr>`;
       }
     )
