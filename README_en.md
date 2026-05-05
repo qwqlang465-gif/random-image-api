@@ -12,7 +12,8 @@ A self-hosted random image API with an admin panel. Built on Node.js + Express, 
 ## Features
 
 - Multi-gallery management with `pc` (landscape) and `mobile` (portrait) categories
-- Random image API returning raw image or JSON
+- Random image API that defaults to a 302 redirect to an absolute image URL, with raw image and JSON modes available
+- API responses are not cached, while static image files use long-term caching for CDN-friendly delivery
 - Admin panel: upload, preview, filter, sort, batch delete
 - File header validation on upload, rejects dangerous file types
 - Cookie Session, CSRF, Helmet, Rate Limiting, CORS
@@ -154,7 +155,7 @@ Default credentials: `admin` / `changeme`.
 | `ADMIN_PATH` | `/image/admin` | Admin panel path |
 | `MAX_FILE_SIZE_MB` | `10` | Max file size per upload (MB) |
 | `MAX_UPLOAD_FILES` | `20` | Max files per batch upload |
-| `CORS_ORIGIN` | `*` | Allowed CORS origins |
+| `CORS_ORIGIN` | `*` | Allowed CORS origins for pages and admin APIs; image APIs and static images always allow cross-origin access |
 
 ## Project Structure
 
@@ -183,13 +184,15 @@ Default credentials: `admin` / `changeme`.
 
 ### `GET /image/api/random`
 
-Returns a random image. Supports flexible parameter combinations for different use cases.
+Returns a random image. By default it responds with a 302 redirect to the absolute URL of the real image file. The random API entry itself is not cached, while `/image/images/...` static image files are suitable for CDN caching. Image API responses and final static image responses include `Access-Control-Allow-Origin: *` for theme integrations and cross-origin image loading.
 
 | Parameter | Values | Default | Description |
 |-----------|--------|---------|-------------|
 | `gallery` | Gallery name | All | Target gallery |
 | `device` | `pc` / `mobile` / `all` | `all` | Device type |
-| `type` | `image` / `json` / `redirect` | `image` | Response format |
+| `type` | `image` / `json` / `redirect` / `pc` / `mobile` | `redirect` | Response format; `pc` / `mobile` are compatibility aliases for device selection |
+
+`device` has higher priority than `type`. For example, `/image/api/random?device=mobile&type=mobile` selects a portrait mobile image and uses the default 302 redirect response. Unknown `type` values are ignored and treated as the default `redirect` mode.
 
 **Response format details:**
 
@@ -197,7 +200,15 @@ Returns a random image. Supports flexible parameter combinations for different u
 |------|----------|-------------|
 | `image` | Raw image binary | `image/*` |
 | `json` | Image metadata JSON | `application/json` |
-| `redirect` | 302 redirect to image URL | - |
+| `redirect` | 302 redirect to absolute image URL | - |
+
+Accessing `/image/api/random` is equivalent to `/image/api/random?type=redirect`. Use `?type=image` for raw image binary, `?type=json` for metadata JSON, or `?type=redirect` for an explicit redirect response.
+
+**Caching and CORS:**
+
+- `/image/api/...` responses use `Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate`
+- `/image/images/...` static image files use `Cache-Control: public, max-age=31536000, immutable`
+- Image APIs, 302 responses, and static image responses include `Access-Control-Allow-Origin: *`
 
 **JSON response example:**
 
@@ -219,11 +230,14 @@ Returns a random image. Supports flexible parameter combinations for different u
 
 | Endpoint | Use Case |
 |----------|----------|
-| `GET /image/api/random` | Random image from any gallery, ideal for site-wide random backgrounds |
+| `GET /image/api/random` | Default 302 redirect to a real image file, ideal for CDN-backed random backgrounds |
 | `GET /image/api/random?gallery=anime` | Random image from a specific gallery, ideal for category-based wallpaper rotation |
 | `GET /image/api/random?gallery=anime&device=pc` | Gallery + landscape, ideal for desktop backgrounds |
 | `GET /image/api/random?gallery=anime&device=mobile` | Gallery + portrait, ideal for mobile backgrounds |
+| `GET /image/api/random?type=pc` | Theme compatibility alias for landscape desktop random images |
+| `GET /image/api/random?type=mobile` | Theme compatibility alias for portrait mobile random images, including Sakurairo-style requests |
 | `GET /image/api/random?type=json` | Image metadata for custom frontend rendering |
+| `GET /image/api/random?type=image` | Raw image binary for clients that do not want redirect mode |
 | `GET /image/api/random?type=redirect` | 302 redirect, ideal for `<img src>` direct embedding |
 | `GET /image/api/:gallery` | Gallery shortcut, equivalent to `?gallery=xxx` |
 | `GET /image/api/galleries` | All gallery statistics, ideal for admin dashboards |

@@ -12,7 +12,8 @@
 ## 功能
 
 - 多图库管理，支持 `pc`（横屏）和 `mobile`（竖屏）分类
-- 随机图 API，默认 302 跳转到图片文件，并支持返回图片本体或 JSON
+- 随机图 API，默认 302 跳转到绝对图片 URL，并支持返回图片本体或 JSON
+- 图片 API 默认不缓存，静态图片文件长缓存，适合配合 CDN 使用
 - 管理后台：上传、预览、筛选、排序、批量删除
 - 上传时校验真实文件头，拒绝危险文件类型
 - Cookie Session、CSRF、Helmet、限流、CORS
@@ -153,7 +154,7 @@ npm start               # 或 npm run dev 热更新
 | `ADMIN_PATH` | `/image/admin` | 后台路径 |
 | `MAX_FILE_SIZE_MB` | `10` | 单文件大小限制（MB） |
 | `MAX_UPLOAD_FILES` | `20` | 单次批量上传数量 |
-| `CORS_ORIGIN` | `*` | CORS 允许来源 |
+| `CORS_ORIGIN` | `*` | 页面和后台接口的 CORS 允许来源；图片 API 与静态图片固定允许跨域访问 |
 
 ## 目录结构
 
@@ -182,13 +183,15 @@ npm start               # 或 npm run dev 热更新
 
 ### `GET /image/api/random`
 
-随机返回一张图片。默认 302 跳转到真实图片文件，适合 CDN 缓存 `/image/images/...` 下的图片资源；随机入口本身不应被缓存。支持参数组合，灵活适配不同场景。
+随机返回一张图片。默认 302 跳转到真实图片文件的绝对 URL，适合 CDN 缓存 `/image/images/...` 下的图片资源；随机入口本身不缓存。图片 API 和最终静态图片响应都会带 `Access-Control-Allow-Origin: *`，方便主题、前端页面和跨域图片加载使用。
 
 | 参数 | 可选值 | 默认值 | 说明 |
 |------|--------|--------|------|
 | `gallery` | 图库名 | 全部 | 指定图库 |
 | `device` | `pc` / `mobile` / `all` | `all` | 设备类型 |
-| `type` | `image` / `json` / `redirect` | `redirect` | 返回格式 |
+| `type` | `image` / `json` / `redirect` / `pc` / `mobile` | `redirect` | 返回格式；`pc` / `mobile` 兼容部分主题写法，会按设备类型处理 |
+
+`device` 优先级高于 `type`。例如 `/image/api/random?device=mobile&type=mobile` 会按 `device=mobile` 选择手机竖屏图片，并使用默认 302 跳转返回；未知 `type` 会被忽略并按默认 `redirect` 处理。
 
 **返回格式说明：**
 
@@ -196,9 +199,15 @@ npm start               # 或 npm run dev 热更新
 |------|----------|-------------|
 | `image` | 图片二进制流 | `image/*` |
 | `json` | 图片元数据 JSON | `application/json` |
-| `redirect` | 302 跳转到图片 URL | - |
+| `redirect` | 302 跳转到绝对图片 URL | - |
 
 默认访问 `/image/api/random` 等价于 `/image/api/random?type=redirect`。如需直接返回图片本体，可使用 `?type=image`；如需 JSON，可使用 `?type=json`；如需显式跳转，可使用 `?type=redirect`。
+
+**缓存与跨域：**
+
+- `/image/api/...` 响应统一设置 `Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate`
+- `/image/images/...` 静态图片统一设置 `Cache-Control: public, max-age=31536000, immutable`
+- 图片 API、302 响应和静态图片响应统一带 `Access-Control-Allow-Origin: *`
 
 **JSON 响应示例：**
 
@@ -224,6 +233,8 @@ npm start               # 或 npm run dev 热更新
 | `GET /image/api/random?gallery=anime` | 指定图库随机出图，适合分类壁纸轮播 |
 | `GET /image/api/random?gallery=anime&device=pc` | 指定图库 + 横屏，适合桌面端背景 |
 | `GET /image/api/random?gallery=anime&device=mobile` | 指定图库 + 竖屏，适合手机端背景 |
+| `GET /image/api/random?type=pc` | 兼容部分主题参数写法，等价于按桌面横屏随机 |
+| `GET /image/api/random?type=mobile` | 兼容 Sakurairo 等主题参数写法，等价于按手机竖屏随机 |
 | `GET /image/api/random?type=json` | 获取图片元数据，适合前端自行渲染 |
 | `GET /image/api/random?type=image` | 直接返回图片本体，适合不需要 CDN 跳转缓存的场景 |
 | `GET /image/api/random?type=redirect` | 302 跳转，适合 `<img src>` 直接引用 |
